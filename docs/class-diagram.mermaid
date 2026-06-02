@@ -1,0 +1,158 @@
+classDiagram
+    direction TB
+
+    class MembershipTier {
+        <<enumeration>>
+        FREE = free
+        PRO = pro
+        ENTERPRISE = enterprise
+    }
+
+    class QuotaState {
+        <<interface>>
+        daily: DailyQuota
+        credits: CreditInfo
+        tier: MembershipTier
+        subscription: Subscription
+    }
+
+    class DailyQuota {
+        <<interface>>
+        image: QuotaItem
+        video: QuotaItem
+    }
+
+    class QuotaItem {
+        <<interface>>
+        used: number
+        total: number
+        resetAt: string
+    }
+
+    class CreditInfo {
+        <<interface>>
+        balance: number
+        expiringAt: string
+    }
+
+    class Subscription {
+        <<interface>>
+        plan: PlanType
+        startedAt: string
+        expiresAt: string
+        autoRenew: boolean
+    }
+
+    class PlanType {
+        <<enumeration>>
+        MONTHLY = monthly
+        YEARLY = yearly
+    }
+
+    class PromptTemplate {
+        <<interface>>
+        id: string
+        category: TemplateCategory
+        title: string
+        prompt: string
+        preview: string
+        isCustom: boolean
+        tierRequired: MembershipTier
+    }
+
+    class TemplateCategory {
+        <<enumeration>>
+        PORTRAIT = portrait
+        LANDSCAPE = landscape
+        ANIMAL = animal
+        ABSTRACT = abstract
+        ARCHITECTURE = architecture
+        CREATIVE = creative
+    }
+
+    class GalleryItem {
+        <<interface>>
+        id: string
+        resultId: string
+        userId: string
+        userNickname: string
+        mediaUrl: string
+        mediaType: string
+        prompt: string
+        likeCount: number
+        isLikedByMe: boolean
+        sharedAt: string
+    }
+
+    class BatchConfig {
+        <<interface>>
+        batchSize: number
+        batchSizeOptions: number[]
+    }
+
+    class VideoDuration {
+        <<enumeration>>
+        SEC_3 = 3
+        SEC_5 = 5
+        SEC_10 = 10
+    }
+
+    class MembershipStore {
+        <<zustand store>>
+        +quotaState: QuotaState
+        +isUpgradeDialogOpen: boolean
+        +checkoutPlan: PlanType null
+        +isPaymentProcessing: boolean
+        +subscribe(tier, plan): void
+        +checkQuota(type): QuotaCheckResult
+        +consumeQuota(type): void
+        +purchaseCredits(packageId): void
+        +resetDailyQuota(): void
+        +openUpgradeDialog(feature): void
+        +closeUpgradeDialog(): void
+        +startCheckout(tier, plan): void
+        +completeCheckout(): void
+        +cancelCheckout(): void
+    }
+
+    class MockPaymentService {
+        +processPayment(plan): Promise~PaymentResult~
+    }
+
+    QuotaState --> DailyQuota
+    QuotaState --> CreditInfo
+    QuotaState --> Subscription
+    QuotaState --> MembershipTier
+    DailyQuota --> QuotaItem
+    Subscription --> PlanType
+    PromptTemplate --> TemplateCategory
+    PromptTemplate --> MembershipTier
+    MembershipStore --> QuotaState
+    MembershipStore --> MockPaymentService
+
+    class GenerationConfig_CHANGED {
+        <<现有接口变更>>
+        +referenceStrength: number
+        +negativePrompt: string
+        +seed: number
+        +videoDuration: VideoDuration
+        +batchSize: number
+    }
+
+    class GenerationResult_CHANGED {
+        <<现有接口变更>>
+        +isShared: boolean
+        +shareId: string
+        +likeCount: number
+    }
+
+    class HistoryFilter_CHANGED {
+        <<现有接口变更>>
+        +tags: string[]
+        +favoritesOnly: boolean
+    }
+
+    class User_CHANGED {
+        <<现有接口变更>>
+        +tier: MembershipTier
+    }
