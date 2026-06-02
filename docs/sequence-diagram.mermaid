@@ -1,0 +1,74 @@
+sequenceDiagram
+    actor User
+    participant MS as MembershipStore
+    participant MPS as MockPaymentService
+    participant AS as AuthStore
+
+    User->>MS: openUpgradeDialog("图生图")
+    MS-->>User: 显示升级弹窗
+
+    User->>MS: startCheckout("pro", "monthly")
+    MS->>MS: 设置 checkoutPlan, isPaymentProcessing=true
+    MS->>MPS: processPayment({tier:"pro", plan:"monthly"})
+    MPS-->>MS: 1.5s后返回 {success:true}
+    MS->>MS: 更新 quotaState.tier="pro", 更新 daily 额度
+    MS->>AS: updateProfile({tier:"pro"})
+    MS->>MS: isPaymentProcessing=false, checkoutPlan=null
+    MS-->>User: 订阅成功，显示Pro徽章
+
+---
+
+    actor User2
+    participant CP as CreationPanel
+    participant QG as useQuotaGuard
+    participant MS2 as MembershipStore
+    participant GS as GenerationStore
+
+    User2->>CP: 点击生成按钮
+    CP->>QG: checkQuota(generationType)
+    QG->>MS2: checkQuota("TEXT_TO_IMAGE")
+
+    alt 额度充足
+        MS2-->>QG: {allowed:true}
+        QG-->>CP: 通过
+        CP->>GS: startGeneration(type, prompt, config)
+        GS->>MS2: consumeQuota("image")
+        MS2->>MS2: daily.image.used++
+    else 日额度不足
+        MS2-->>QG: {allowed:false, reason:"daily_exhausted", suggestion:"upgrade_or_credits"}
+        QG-->>CP: 拦截
+        CP->>MS2: openUpgradeDialog("daily_exhausted")
+    else 权限不足(如Free用图生图)
+        MS2-->>QG: {allowed:false, reason:"tier_restricted", suggestion:"upgrade"}
+        QG-->>CP: 拦截
+        CP->>MS2: openUpgradeDialog("tier_restricted")
+    end
+
+---
+
+    actor User3
+    participant CP2 as CreationPanel
+    participant IU as ImageUpload
+    participant RS as ReferenceSlider
+    participant QG2 as useQuotaGuard
+    participant GS2 as GenerationStore
+    participant MAS as MockAIService
+
+    User3->>CP2: 选择「图生图」模式
+    CP2->>IU: 渲染图片上传区域
+    User3->>IU: 上传参考图
+    IU->>IU: FileReader.readAsDataURL → base64
+    IU-->>CP2: 设置 referenceImageUrl=base64
+
+    CP2->>RS: 渲染参考强度滑块
+    User3->>RS: 调整强度 0.3~1.0
+    RS-->>CP2: 设置 referenceStrength=0.7
+
+    User3->>CP2: 输入Prompt + 点击生成
+    CP2->>QG2: checkQuota("IMAGE_TO_IMAGE")
+    QG2-->>CP2: {allowed:true} (Pro+)
+    CP2->>GS2: startGeneration("IMAGE_TO_IMAGE", prompt, {referenceImageUrl, referenceStrength, ...})
+    GS2->>MAS: generateImage(prompt, config)
+    MAS-->>GS2: 返回 task
+    GS2->>GS2: 轮询 → 完成
+    GS2-->>CP2: 跳转结果页
