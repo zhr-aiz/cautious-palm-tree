@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
 import AppLayout from './components/layout/AppLayout';
 import CreationPage from './pages/CreationPage';
 import ResultPage from './pages/ResultPage';
@@ -14,27 +15,30 @@ import AuthGuard from './components/auth/AuthGuard';
 /** Root application component with routing */
 function App(): React.ReactElement {
   return (
-    <Routes>
-      <Route path="/auth" element={<AuthPage />} />
-      <Route
-        path="/"
-        element={
-          <AuthGuard>
-            <AppLayout />
-          </AuthGuard>
-        }
-      >
-        <Route index element={<CreationPage />} />
-        <Route path="result/:taskId" element={<ResultPage />} />
-        <Route path="history" element={<HistoryPage />} />
-        <Route path="settings" element={<SettingsPage />} />
-        <Route path="membership" element={<MembershipPage />} />
-        <Route path="membership/credits" element={<CreditsPage />} />
-        <Route path="membership/checkout" element={<CheckoutPage />} />
-        <Route path="gallery" element={<GalleryPage />} />
-      </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <>
+      <Routes>
+        <Route path="/auth" element={<AuthPage />} />
+        <Route
+          path="/"
+          element={
+            <AuthGuard>
+              <AppLayout />
+            </AuthGuard>
+          }
+        >
+          <Route index element={<CreationPage />} />
+          <Route path="result/:taskId" element={<ResultPage />} />
+          <Route path="history" element={<HistoryPage />} />
+          <Route path="settings" element={<SettingsPage />} />
+          <Route path="membership" element={<MembershipPage />} />
+          <Route path="membership/credits" element={<CreditsPage />} />
+          <Route path="membership/checkout" element={<CheckoutPage />} />
+          <Route path="gallery" element={<GalleryPage />} />
+        </Route>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+      <Analytics />
+    </>
   );
 }
 
